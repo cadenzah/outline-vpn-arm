@@ -1,8 +1,11 @@
-# outline-vpn-arm
+# outline-vpn-arm (forked)
 
-Install Outline-VPN ARM64:  
-./INSTALL-ARM64
+Customized script for installing [Outline VPN]() on Raspberry Pi 4(ARM64) for personal use
 
-Install Outline-VPN ARMv7(raspberry pi):  
-./INSTALL-ARMv7
+## How to use
 
+```
+./INSTALL-ARM64 <DOMAIN_FOR_YOUR_SERVER>
+```
+
+The argument is optinal
