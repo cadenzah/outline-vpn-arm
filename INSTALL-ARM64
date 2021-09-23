@@ -1,7 +1,67 @@
-if [ "$1" ];
-then
+#!/bin/bash
+
+# Init Outline Server
+if [ "$1" ]; then
     HOSTNAME=$1
-    export SB_IMAGE=ken1029/shadowbox:latest;cat arm64/install_server.sh | bash -s -- --hostname "${HOSTNAME}";
+    export SB_IMAGE=ken1029/shadowbox:latest;cat arm64/install_server.sh | bash -s -- --hostname "${HOSTNAME}"
 else
-    export SB_IMAGE=ken1029/shadowbox:latest;cat arm64/install_server.sh | bash;
+    export SB_IMAGE=ken1029/shadowbox:latest;cat arm64/install_server.sh | bash
 fi
+
+# Reset the previous Firewall configs
+IS_CONFIG_EXISTS=false
+while read LINE; do
+    IS_CONFIG_EXISTS=true
+    IFS=': ' read -ra WORDS <<< "$LINE"
+    declare "${WORDS[0]}"="${WORDS[1]}"
+    # echo "${!WORDS[0]}"
+done <<< $(cat port_config)
+
+if [ "$IS_CONFIG_EXISTS" = true ]; then
+    sudo ufw delete allow "${MAN_PORT}/tcp"
+    sudo ufw delete allow "${ACCESS_PORT}/tcp"
+    sudo ufw delete allow "${ACCESS_PORT}/udp"
+fi
+
+# Gather configuration informations
+## Copy the configuration files - API Key, Access PORT
+sudo cp /opt/outline/access.txt .
+sudo chmod 755 access.txt
+
+## Get PORT for Management
+ACCESS_TXT=$(grep "apiUrl" access.txt)
+IFS=':' read -ra WORDS <<< "$ACCESS_TXT"
+IFS='/' read -ra WORDS <<< "${WORDS[3]}"
+MAN_PORT=${WORDS[0]}
+
+## Get PORT for Access Key
+ACCESS_CONFIG_YML_PATH="/opt/outline/persisted-state/outline-ss-server"
+WORDS=$(grep "port" "$ACCESS_CONFIG_YML_PATH/config.yml")
+IFS=': ' read -ra WORDS <<< "$WORDS"
+ACCESS_PORT=${WORDS[1]}
+
+## Save PORT configs into separate file for future use
+if [ -f "port_config" ]; then
+    rm -f port_config
+fi
+touch port_config
+echo "MAN_PORT: ${MAN_PORT}" >> port_config
+echo "ACCESS_PORT: ${ACCESS_PORT}" >> port_config
+
+# echo "MAN_PORT: $MAN_PORT, ACCESS_PORT: $ACCESS_PORT"
+
+# Open Firewall for each ports
+## Check if ufw is not active; Enable it first
+UFW_STATUS=$(sudo ufw status verbose 2>&1)
+IFS=$'\n' read -ra UFW_STATUS <<< "$UFW_STATUS"
+IFS=': ' read -ra UFW_STATUS <<< "${UFW_STATUS[0]}"
+UFW_STATUS=${UFW_STATUS[1]}
+
+if [ $UFW_STATUS = "inactive" ]; then
+    sudo ufw enable
+fi
+
+## Enable firewall ports
+sudo ufw allow "${MAN_PORT}"/tcp
+sudo ufw allow "${ACCESS_PORT}"/tcp
+sudo ufw allow "${ACCESS_PORT}"/udp
