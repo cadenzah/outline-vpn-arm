@@ -48,6 +48,13 @@ network:
             dhcp4: true
 ```
 
+위 내용 저장한 뒤, 설정 적용하고 리부트
+
+```bash
+$ sudo netplan --debug apply
+$ sudo reboot
+```
+
 ### 3. 필수 어플리케이션 설치
 
 - `vim`, `git`, `docker`
