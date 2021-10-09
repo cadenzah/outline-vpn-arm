@@ -1,0 +1,3 @@
+- 고정 IP 설정
+- 포트 지정하여 실행
+- Health Check /w Bot
